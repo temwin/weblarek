@@ -1,4 +1,6 @@
-export const apiProducts = {
+import { IProduct } from "../types";
+
+export const apiProducts: { items: IProduct[]; total: number }  = {
     "total": 10,
     "items": [
         {
