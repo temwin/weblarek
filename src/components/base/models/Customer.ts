@@ -6,16 +6,11 @@ export class Customer {
   phone?: string;
   address?: string;
 
-  constructor(
-    payment?: "card" | "cash",
-    email?: string,
-    phone?: string,
-    address?: string
-  ) {
-    this.payment = payment;
-    this.email = email;
-    this.phone = phone;
-    this.address = address;
+  constructor() {
+    this.payment = undefined;
+    this.email = undefined;
+    this.phone = undefined;
+    this.address = undefined;
   }
 
   saveField(field: keyof IBuyer, value: string | "card" | "cash"): void {

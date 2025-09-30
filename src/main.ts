@@ -51,7 +51,12 @@ console.log("После очистки:", customer.getData());
 const api = new Api(API_URL);
 const communication = new Communication(api);
 
-communication.fetchProducts().then((products) => {
-  catalog.saveProducts(products);
-  console.log("Каталог товаров с сервера:", catalog.getProducts());
-});
+communication
+  .fetchProducts()
+  .then((products) => {
+    catalog.saveProducts(products);
+    console.log("Каталог товаров с сервера:", catalog.getProducts());
+  })
+  .catch((error) => {
+    console.error("Ошибка при получении данных с сервера:", error);
+  });
