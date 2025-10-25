@@ -1,20 +1,24 @@
 import { IBuyer } from "../../../types";
+import { IEvents } from "../events/Events";
 
 export class Customer {
-  payment?: "card" | "cash";
-  email?: string;
-  phone?: string;
-  address?: string;
+  private payment?: "card" | "cash";
+  private email?: string;
+  private phone?: string;
+  private address?: string;
+  private events: IEvents;
 
-  constructor() {
+  constructor(events: IEvents) {
     this.payment = undefined;
     this.email = undefined;
     this.phone = undefined;
     this.address = undefined;
+    this.events = events;
   }
 
   saveField(field: keyof IBuyer, value: string | "card" | "cash"): void {
     (this as any)[field] = value;
+    this.events.emit("customer:updated", this.getData());
   }
 
   getData(): IBuyer {
@@ -31,6 +35,7 @@ export class Customer {
     this.email = undefined;
     this.phone = undefined;
     this.address = undefined;
+    this.events.emit("customer:cleared");
   }
 
   validate(): { [K in keyof IBuyer]?: string } {
