@@ -1,32 +1,31 @@
-import { Component } from "./Component";
-
 export interface CardData {
   title: string;
   price: number | null;
 }
 
-export class Card extends Component<CardData> {
+export class Card {
+  protected container: HTMLElement;
   protected titleElement: HTMLElement;
   protected priceElement: HTMLElement;
 
   constructor(container: HTMLElement) {
-    super(container);
-
+    this.container = container;
     this.titleElement = this.container.querySelector(".card__title")!;
     this.priceElement = this.container.querySelector(".card__price")!;
   }
 
-  setTitle(value: string) {
-    this.titleElement.textContent = value;
-  }
-
-  setPrice(value: number | null) {
-    this.priceElement.textContent = value !== null ? `${value} ₽` : "Бесценно";
+  set data(value: CardData) {
+    this.titleElement.textContent = value.title;
+    this.priceElement.textContent = value.price !== null ? `${value.price} cинапсов` : "Бесценно";
   }
 
   render(data?: Partial<CardData>): HTMLElement {
-    if (data?.title) this.setTitle(data.title);
-    if (data?.price !== undefined) this.setPrice(data.price);
+    if (data?.title || data?.price !== undefined) {
+      this.data = {
+        title: data.title ?? "",
+        price: data.price ?? null ,
+      };
+    }
     return this.container;
   }
 }

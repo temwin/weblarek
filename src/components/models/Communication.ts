@@ -1,5 +1,10 @@
 import { IApi, IProduct, IApiOrderRequest } from "../../../types";
 
+export interface IApiOrderResponse {
+  id: string;
+  total: number;
+}
+
 export class Communication {
   api: IApi;
 
@@ -12,7 +17,7 @@ export class Communication {
     return response.items;
   }
 
-  async sendOrder(order: IApiOrderRequest): Promise<object> {
-    return this.api.post("/order", order, "POST");
+  async sendOrder(order: IApiOrderRequest): Promise<IApiOrderResponse> {
+    return this.api.post<IApiOrderResponse>("/order", order, "POST");
   }
 }

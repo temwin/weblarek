@@ -13,7 +13,6 @@ export class Gallery extends Component<GalleryData> {
     }
 
     set catalog(items: HTMLElement[]) {
-        this.catalogElement.innerHTML = '';
-        items.forEach(item => this.catalogElement.append(item));
+        this.catalogElement.replaceChildren(...items);
     }
 }

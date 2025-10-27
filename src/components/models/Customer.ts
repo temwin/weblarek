@@ -18,7 +18,7 @@ export class Customer {
 
   saveField(field: keyof IBuyer, value: string | "card" | "cash"): void {
     (this as any)[field] = value;
-    this.events.emit("customer:updated", this.getData());
+    this.events.emit("customer:fieldChanged",  { field, value });
   }
 
   getData(): IBuyer {
@@ -44,7 +44,7 @@ export class Customer {
     if (!this.payment) errors.payment = "Не выбран вид оплаты";
     if (!this.email) errors.email = "Укажите email";
     if (!this.phone) errors.phone = "Укажите телефон";
-    if (!this.address) errors.address = "Укажите адрес";
+    if (!this.address) errors.address = "Необходимо указать адрес";
 
     return errors;
   }

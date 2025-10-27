@@ -39,6 +39,5 @@ export class Modal extends Component<ModalData> {
     private close() {
         this.container.classList.remove('modal_active');
         document.body.style.overflow = '';
-        this.events.emit('modal:close');
     }
 }

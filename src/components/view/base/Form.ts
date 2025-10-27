@@ -21,18 +21,4 @@ export class Form<T extends FormData> {
     this.errorElement.textContent = message;
     this.errorElement.style.display = message ? 'block' : 'none';
   };
-
-  getData(): T {
-    const data = {} as T;
-    this.inputs.forEach((input) => {
-      data[input.name as keyof T] = input.value as any;
-    })
-    return data;
-  };
-
-  clear() {
-    this.inputs.forEach((input) => (input.value = ''));
-    this.setError('');
-    this.setSubmitEnabled(true);
-  };
 }

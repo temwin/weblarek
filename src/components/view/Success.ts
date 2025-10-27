@@ -2,8 +2,7 @@ import { Component } from "./base/Component";
 import { IEvents } from "../events/Events";
 
 interface SuccessData {
-    title: string;
-    description: string;
+    total: number;
 }
 
 export class Success extends Component<SuccessData> {
@@ -24,17 +23,9 @@ export class Success extends Component<SuccessData> {
         })
     }
 
-    setTitle(value: string) {
-        this.titleElement.textContent = value;
-    }
-
-    setDescription(value: string) {
-        this.descriptionElement.textContent = value;
-    }
-
     render(data: SuccessData) {
-        this.setTitle(data.title);
-        this.setDescription(data.description);
+        this.titleElement.textContent = "Заказ оформлен";
+        this.descriptionElement.textContent = `Списано ${data.total} синапсов`
         return this.container;
     }
 }

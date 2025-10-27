@@ -1,5 +1,6 @@
 import { Form } from "./base/Form";
 import { IEvents } from "../events/Events";
+import { Customer } from "../models/Customer";
 
 export interface OrderFormData {
   [key: string]: string;
@@ -10,75 +11,71 @@ export interface OrderFormData {
 export class OrderForm extends Form<OrderFormData> {
   paymentButtons: HTMLButtonElement[];
   addressInput: HTMLInputElement;
-  step1NextButton: HTMLButtonElement;
   private events: IEvents;
+  private customer: Customer;
+  private errorMessage: HTMLElement;
 
-  constructor(container: HTMLFormElement, events: IEvents) {
+  constructor(container: HTMLFormElement, events: IEvents, customer: Customer) {
     super(container);
     this.events = events;
+    this.customer = customer;
 
     this.paymentButtons = Array.from(
       container.querySelectorAll('button[name="card"], button[name="cash"]')
     );
     this.addressInput = container.querySelector('input[name="address"]')!;
-    this.step1NextButton = container.querySelector(".order__button")!;
+    this.errorMessage = container.querySelector('.form__errors')!;
 
-    this.setupStep1();
-  }
-
-  // === выбор способа оплаты ===
-  setPayment(payment: "card" | "cash") {
     this.paymentButtons.forEach((button) => {
-      button.classList.toggle("button_alt-active", button.name === payment);
+      button.addEventListener("click", () => {
+        this.customer.saveField("payment", button.name as "card" | "cash");
+        this.render(this.customer.getData());
+      });
     });
-    this.updateStep1Button();
+
+    this.addressInput.addEventListener("input", () => {
+      this.customer.saveField("address", this.addressInput.value);
+      this.render(this.customer.getData());
+    });
+
+    // Сабмит формы
+    this.container.addEventListener("submit", (e) => {
+      e.preventDefault();
+      if (this.checkForm()) {
+        this.events.emit("order:submit", this.customer.getData());
+      }
+    });
+
+    // Инициализация состояния кнопки
+    this.render(this.customer.getData());
   }
 
-  getPayment(): "card" | "cash" | "" {
-    const activeButton = this.paymentButtons.find((button) =>
-      button.classList.contains("button_alt-active")
-    );
-    return activeButton ? (activeButton.name as "card" | "cash") : "";
+  checkForm(): boolean {
+    const errors = this.customer.validate();
+
+    if (errors.payment) {
+      this.errorMessage.textContent = errors.payment;
+    } else if (errors.address) {
+      this.errorMessage.textContent = errors.address;
+    } else {
+      this.errorMessage.textContent = "";
+    }
+
+    const isValid = !errors.payment && !errors.address;
+    this.setSubmitEnabled(isValid);
+    return isValid;
   }
 
-  // === заполнение адреса ===
-  setAddress(value: string) {
-    this.addressInput.value = value;
-    this.updateStep1Button();
-  }
-
-  // === собрать данные ===
-  getData(): OrderFormData {
-    return {
-      payment: this.getPayment(),
-      address: this.addressInput.value.trim(),
-    };
-  }
-
-  // === логика шага 1 ===
-  private setupStep1() {
+  render(data: OrderFormData) {
     this.paymentButtons.forEach((button) => {
-      button.addEventListener("click", () =>
-        this.setPayment(button.name as "card" | "cash")
+      button.classList.toggle(
+        "button_alt-active",
+        button.name === data.payment
       );
     });
 
-    this.addressInput.addEventListener("input", () =>
-      this.updateStep1Button()
-    );
-    this.updateStep1Button();
-  }
+    this.addressInput.value = data.address;
 
-  private updateStep1Button() {
-    const paymentSelected = this.getPayment() !== "";
-    const addressFilled = this.addressInput.value.trim() !== "";
-
-    if (paymentSelected && !addressFilled) {
-      this.setError("Необходимо указать адрес");
-    } else {
-      this.setError("");
-    }
-
-    this.step1NextButton.disabled = !(paymentSelected && addressFilled);
+    this.checkForm();
   }
 }
