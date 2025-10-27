@@ -27,8 +27,10 @@ export class CardCatalog extends Card {
       this.addButton.addEventListener("click", (e) => {
         e.stopPropagation();
         if (!this.fullData) return;
-
+    
+        // Передаем прямо fullData
         this.events.emit(this.inCart ? "cart:remove" : "cart:add", this.fullData);
+    
         this.inCart = !this.inCart;
         this.updateButton();
       });

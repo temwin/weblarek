@@ -68,8 +68,8 @@ const renderCatalog = (products: IProduct[]) => {
 
 // === Подписки на события корзины ===
 events.on('cart:add', (product: IProduct) => {
-  cart.addItem(product);                  
-  modal.content = null;
+  cart.addItem(product);
+  modal.content = null; 
   events.emit("basket:changed", cart.getItems());
 });
 

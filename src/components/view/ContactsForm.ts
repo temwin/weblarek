@@ -46,19 +46,10 @@ export class ContactsForm extends Form<ContactsFormData> {
   }
 
   private updateFormState(): boolean {
-    const emailFilled = !!this.emailInput.value.trim();
-    const phoneFilled = !!this.phoneInput.value.trim();
-    let message = "";
-  
-    if (emailFilled && !phoneFilled) {
-      message = "Укажите телефон";
-    } else if (!emailFilled && phoneFilled) {
-      message = "Укажите email";
-    }
-  
-    this.errorMessage.textContent = message;
-  
-    const isValid = emailFilled && phoneFilled;
+    const errors = this.customer.validate();
+    this.errorMessage.textContent = errors.email || errors.phone || '';
+    
+    const isValid = !errors.email && !errors.phone;
     this.setSubmitEnabled(isValid);
     return isValid;
   }
