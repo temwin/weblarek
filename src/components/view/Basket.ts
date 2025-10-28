@@ -1,8 +1,5 @@
-import { IProduct } from "../../types";
 import { Component } from "./base/Component";
-import { cloneTemplate } from "../../utils/utils";
 import { IEvents } from "../events/Events";
-import { CardBasket, CardBasketData } from "./CardBasket";
 
 interface BasketData {
   items: HTMLElement[];
@@ -21,35 +18,26 @@ export class Basket extends Component<BasketData> {
     this.listElement = container.querySelector(".basket__list")!;
     this.totalPriceElement = container.querySelector(".basket__price")!;
     this.checkoutButton = container.querySelector(".basket__button")!;
+
+    this.showEmpty();
+    this.setCheckoutEnabled(false);
+    this.setTotalPrice(0);
+
+    this.checkoutButton.addEventListener('click', () => {
+      this.events.emit('basket:checkout');
+    });
   }
 
-  setItemsData(items: IProduct[]) {
+  setItems(items: HTMLElement[]) {
     this.listElement.innerHTML = "";
 
     if (items.length === 0) {
       this.showEmpty();
       this.setCheckoutEnabled(false);
-      this.setTotalPrice(0);
-      return;
+    } else {
+      this.listElement.append(...items);
+      this.setCheckoutEnabled(true);
     }
-
-    items.forEach((product, index) => {
-      const itemElement = cloneTemplate("#card-basket");
-      const card = new CardBasket(itemElement, this.events);
-
-      const renderedElement = card.render({
-        title: product.title,
-        price: product.price ?? null,
-        index: index + 1,
-        product: product,
-      });
-
-      this.listElement.appendChild(renderedElement);
-    });
-
-    const total = items.reduce((sum, item) => sum + (item.price ?? 0), 0);
-    this.setTotalPrice(total);
-    this.setCheckoutEnabled(true);
   }
 
   private showEmpty() {
@@ -65,5 +53,11 @@ export class Basket extends Component<BasketData> {
 
   setCheckoutEnabled(enabled: boolean) {
     this.checkoutButton.disabled = !enabled;
+  }
+
+  render(data: BasketData): HTMLElement {
+    this.setItems(data.items);
+    this.setTotalPrice(data.totalPrice);
+    return this.container;
   }
 }

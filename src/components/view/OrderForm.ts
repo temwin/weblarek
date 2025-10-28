@@ -1,6 +1,5 @@
 import { Form } from "./base/Form";
 import { IEvents } from "../events/Events";
-import { Customer } from "../models/Customer";
 
 export interface OrderFormData {
   [key: string]: string;
@@ -12,70 +11,57 @@ export class OrderForm extends Form<OrderFormData> {
   paymentButtons: HTMLButtonElement[];
   addressInput: HTMLInputElement;
   private events: IEvents;
-  private customer: Customer;
-  private errorMessage: HTMLElement;
 
-  constructor(container: HTMLFormElement, events: IEvents, customer: Customer) {
+  constructor(container: HTMLFormElement, events: IEvents) {
     super(container);
     this.events = events;
-    this.customer = customer;
 
     this.paymentButtons = Array.from(
       container.querySelectorAll('button[name="card"], button[name="cash"]')
     );
     this.addressInput = container.querySelector('input[name="address"]')!;
-    this.errorMessage = container.querySelector('.form__errors')!;
 
     this.paymentButtons.forEach((button) => {
       button.addEventListener("click", () => {
-        this.customer.saveField("payment", button.name as "card" | "cash");
-        this.render(this.customer.getData());
+        this.paymentButtons.forEach(b => b.classList.remove("button_alt-active"));
+        button.classList.add("button_alt-active");
+        this.events.emit("order:paymentChange", { payment: button.name as "card" | "cash" });
       });
     });
 
     this.addressInput.addEventListener("input", () => {
-      this.customer.saveField("address", this.addressInput.value);
-      this.render(this.customer.getData());
+      this.events.emit("order:addressChange", { address: this.addressInput.value });
     });
 
-    // Сабмит формы
     this.container.addEventListener("submit", (e) => {
       e.preventDefault();
-      if (this.checkForm()) {
-        this.events.emit("order:submit", this.customer.getData());
-      }
+      this.events.emit("order:submit");
     });
-
-    // Инициализация состояния кнопки
-    this.render(this.customer.getData());
   }
 
-  checkForm(): boolean {
-    const errors = this.customer.validate();
-
-    if (errors.payment) {
-      this.errorMessage.textContent = errors.payment;
-    } else if (errors.address) {
-      this.errorMessage.textContent = errors.address;
-    } else {
-      this.errorMessage.textContent = "";
-    }
-
-    const isValid = !errors.payment && !errors.address;
-    this.setSubmitEnabled(isValid);
-    return isValid;
+  setErrors(errors: { payment?: string; address?: string }) {
+    const errorMessage = errors.payment || errors.address || '';
+    this.setError(errorMessage);
+    this.setSubmitEnabled(!errorMessage);
   }
 
   render(data: OrderFormData) {
     this.paymentButtons.forEach((button) => {
-      button.classList.toggle(
-        "button_alt-active",
-        button.name === data.payment
-      );
+      button.classList.remove("button_alt-active");
     });
 
-    this.addressInput.value = data.address;
+    if (data.payment) {
+      const activeButton = this.paymentButtons.find(button => button.name === data.payment);
+      if (activeButton) {
+        activeButton.classList.add("button_alt-active");
+      }
+    }
 
-    this.checkForm();
+    this.addressInput.value = data.address;
+    this.setError('');
+    
+    const hasPayment = !!data.payment;
+    const hasAddress = !!data.address.trim();
+    this.setSubmitEnabled(hasPayment && hasAddress);
   }
 }

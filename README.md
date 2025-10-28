@@ -327,20 +327,18 @@ interface CardData {
 Класс отвечает за отображение карточки товара в каталоге (галерее). Он наследует общий фонкционал от Card (название и цена) и добавляет собственные элементы - изображение и категорию товара.
 
 Конструктор:
-`constructor(container: HTMLElement)`
+`constructor(container: HTMLElement, events: EventEmitter)` - DOM-элемент карточки и брокер событий для коммуникации с другими компонентами приложения.
 
 Поля класса:
 `imageElement: HTMLImageElement` - элемент изображения товара.
 `categoryElement: HTMLElement` - элемент, отображающий категорию товара.
 `addButton: HTMLButtonElement | null` — кнопка добавления/удаления товара из корзины.
-`inCart: boolean` — состояние нахождения товара в корзине.
-`fullData: CardCatalogData` — данные текущего товара.
+`events: EventEmitter` — объект для отправки пользовательских событий наружу.
 
 Методы класса сеттеры:
 `setCategory(value: string)` - обновляет категорию товара.
-`render(data: CardCatalogData & CardData): HTMLElement` — рендерит карточку товара: название, цену (если цена null, отображается «Бесценно»), категорию и изображение
+`render(data: CardCatalogData): HTMLElement` — вызывает super.render(data) из базового класса и: записывает data-id и data-hasPrice в dataset, вызывает setCategory() для отображения категории, подставляет изображение товара (CDN_URL + image), автоматически заменяя .svg на .png, возвращает готовый DOM-элемент карточки.
 `setInCart(value: boolean)` — задаёт состояние товара в корзине и обновляет кнопку.
-`private updateButton()` — обновляет текст и состояние кнопки в зависимости от цены и состояния корзины.
 
 Интерфейс: 
 Расширяет базовый интерфейс CardData, добавляя поля image и category, необходимые для отображения карточки в галерее. 
@@ -352,16 +350,19 @@ interface CardCatalogData {
 }
 ```
 
+События:
+`cart:add { id: string }` - добавление товара в корзину;
+`cart:remove	{ id: string }`	- удаление товара из корзины;
+`product:selected	{ id: string }` - открытие карточки товара для просмотра.
+
 #### Класс CardPreview
 
 Класс отвечает за отображение подробной карточки товара (в модальном окне). Наследуется от родителя Card, который сожержит общие элементы: titleElement, priceElement. Добавляет свои элементы и функционал, уникальные для превью карточки. 
 
 Конструктор:
-`constructor(container: HTMLElement, events: IEvents)` - принимает контейнер DOM для карточки и объект для работы с событиями. 
+`constructor(container: HTMLElement)` - принимает контейнер DOM для карточки.
 
 Поля класса:
-`events: IEvents` - хранит объект брокера событий, чтобы класс мог генерировать события (basket:add).
-`currentData: CardPreviewData | null = null` - хранит текущие данные карточки (название, цена, категория, изображение, описание).
 `imageElement: HTMLImageElement` - изображение товара.
 `categoryElement: HTMLElement` - категория товара.
 `descriptionElement: HTMLElement` - описание товара.
@@ -371,7 +372,7 @@ interface CardCatalogData {
 `setCategory(value: string)` — обновляет отображаемую категорию и CSS-класс.
 `setDescription(value: string)` — обновляет описание товара.
 `setAddButtonEnabled(enabled: boolean)` — включает или отключает кнопку добавления товара.
-`render(data: CardPreviewData): HTMLElement` — рендерит карточку с актуальными данными.
+`render(data: CardPreviewData, actions?: { onAddToCart?: () => void; onSelect?: () => void;}): HTMLElement` - Рендерит карточку на основе переданных данных data. Устанавливает категорию и описание. Привязывает события клика к кнопке и карточке. Возвращает готовый DOM-элемент карточки.
 
 Интерфейс:
 Расширяет базовый интерфейс CardData, добавляя поля image, category и description необходимые для отображения карточки в галерее.
@@ -382,9 +383,6 @@ interface CardPreviewData {
   description: string;
 }
 ```
-
-Событие: 
-`basket:add` - уведомляет, что пользователь нажал кнопку "Купить" и хочет добавить текущий товар в корзину. Добавляет товар в корзину. 
 
 #### Класс CardBasket
 
@@ -400,16 +398,18 @@ interface CardPreviewData {
 
 Методы класса сеттеры:
 `set index(value: number)` - обновляет отображаемый номер товара.
+`render(data: CardBasketData): HTMLElement` - вызывает базовый метод render() из Card, затем устанавливает индекс (setIndex(data.index)),сохраняет id товара в dataset.productId для последующего удаления и возвращает DOM-элемент карточки.
 
 Интерфейс:
 ```ts
 interface CardBasketData {
+  product: IProduct;
   index: number;
 }
 ```
 
 Событие:
-`basket:remove` - при клике на кнопку удаления товара из корзины удаляет конкретный товар. 
+`cart:remove` — эмитируется при клике по кнопке удаления. Передаёт объект { id: string }, где id — идентификатор товара для удаления из корзины.
 
 #### Класс Form 
 
@@ -445,12 +445,10 @@ interface FormData {
 Поля класса:
 `paymentButtons: HTMLButtonElement[]` - кнопки выбора способо оплаты (card и cash).
 `addressInput: HTMLInputElement` - поле ввода адреса доставки.
-`private events: IEvents` - объект событий.
-`private customer: Customer` - модель покупателя.
-`private errorMessage: HTMLElement` - элемент для вывода ошибок.
+`events: IEvents` — объект событий.
 
 Методы класса сеттеры и утилиты:
-`checkForm(): boolean` - проверяет валидность формы и отображает ошибки
+`setErrors(errors: { payment?: string; address?: string })` — отображает сообщение об ошибке и включает/отключает кнопку отправки.
 `render(data: OrderFormData)` - обновляет интерфейс формы и активные кнопки
 
 Интерфейс:
@@ -463,24 +461,24 @@ interface OrderFormData {
 ```
 
 Событие:
-`order: submit` - при отправке формы оформления заказы передает данные формы в модель заказа для обработки.
+`order:paymentChange` — срабатывает при выборе способа оплаты; передаёт объект { payment: "card" | "cash" } с выбранным способом.
+`order:addressChange` — срабатывает при изменении текста в поле адреса доставки; передаёт объект { address: string } с текущим значением адреса.
+`order:submit` — срабатывает при нажатии кнопки отправки формы оформления заказа; уведомляет презентер о готовности данных для дальнейшей обработки.
 
 #### Класс ContactsForm 
 
 Класс отвечает за работу с формой контактов (Email и телефон) и наследуется от базового класса Form.
 
 Конструктор:
-`constructor(container: HTMLFormElement, event: IEvents, customer: Customer)` - принимает DOM-элемент формы для работы с полями и кнопкой отправки, а также объект модели покупателя для хранения и управления данными.
+`constructor(container: HTMLFormElement, events: IEvents)` - ринимает DOM-элемент формы и объект для работы с событиями.
 
 Поля класса:
 `emailInput: HTMLInputElement` - поле ввода Email.
 `phoneInput: HTMLInputElement` - поле вводу телефона.
 `events: IEvents` - объект брокера событий.
-`customer: Customer` — модель покупателя.
-`errorMessage: HTMLElement` — элемент для отображения сообщений об ошибках.
 
 Методы класса сеттеры и утилиты:
-`updateFormState(): boolean` — проверяет корректность заполнения полей, выводит сообщение об ошибке и включает/отключает кнопку отправки. Возвращает true, если форма валидна.
+`setErrors(errors: { email?: string; phone?: string })` — отображает сообщение об ошибке и включает/отключает кнопку отправки.
 `render(data: ContactsFormData)` — обновляет значения полей формы согласно переданным данным, сбрасывает ошибки и отключает кнопку отправки.
 
 Интерфейс:
@@ -493,15 +491,16 @@ interface ContactsFormData {
 ```
 
 Событие:
-`customer:updateField` — генерируется при каждом изменении полей Email или телефона.
-`contacts:submit` - при отправке формы контактов происходит передача введённого email и телефона в модель данных.
+`contacts:emailChange` — вызывается при изменении поля email.
+`contacts:phoneChange` — вызывается при изменении поля телефона.
+`contacts:submit` — вызывается при отправке формы с текущими значениями email и телефона.
 
 #### Класс Basket
 
-Класс отвечает за отображение содержимого корзины и обновления общей суммы товаров. 
+Компонент отвечает за отображение содержимого корзины, подсчёт общей суммы и управление кнопкой оформления заказа.
 
 Конструктор:
-`constructor(container: HTMLElement)` - принимает контейнер DOM, куда будет вставляться корзина.
+`constructor(container: HTMLElement, events: IEvents)` - принимает контейнер DOM, куда будет вставляться корзина + объект брокера событий.
 
 Поля класса:
 `listElement: HTMLElement` - контейнер, куда добавляются товары.
@@ -510,9 +509,12 @@ interface ContactsFormData {
 `events: IEvents` — событийный менеджер (для отправки событий на уровень презентера).
 
 Методы класса сеттеры и утилиты:
-`setItemsData(items: IProduct[])` — обновляет список товаров корзины на основе массива объектов IProduct.
-`setTotalPrice(value: number)` - обновляет отображаемую сумму корзины в totalPriceElement и внутреннее поле totalPrice.
-`setCheckoutEnabled(enabled: boolean)` — включает или отключает кнопку оформления заказа.
+`setItems(items: HTMLElement[])` — очищает список корзины и вставляет переданные карточки товаров.
+Если список пуст, отображает сообщение «Корзина пуста» и отключает кнопку оформления.
+`private showEmpty()` - создаёт и отображает элемент с текстом «Корзина пуста».
+`setTotalPrice(value: number)` - обновляет отображение общей стоимости товаров (в синапсах).
+`setCheckoutEnabled(enabled: boolean)` — активирует или деактивирует кнопку оформления заказа.
+`render(data: BasketData): HTMLElement` - принимает объект с элементами корзины и суммой, вызывает setItems() и setTotalPrice(), возвращает DOM-элемент контейнера.
 
 Интерфейс:
 ```ts
@@ -521,6 +523,9 @@ interface BasketData {
   totalPrice: number;
 }
 ```
+
+События
+basket:checkout — генерируется при клике на кнопку оформления заказа.
 
 #### Класс Success
 

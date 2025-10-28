@@ -1,6 +1,5 @@
 import { Form } from "./base/Form";
 import { IEvents } from "../events/Events";
-import { Customer } from "../models/Customer";
 
 export interface ContactsFormData {
   [key: string]: string;
@@ -12,52 +11,41 @@ export class ContactsForm extends Form<ContactsFormData> {
   emailInput: HTMLInputElement;
   phoneInput: HTMLInputElement;
   private events: IEvents;
-  private customer: Customer;
-  private errorMessage: HTMLElement;
 
-  constructor(container: HTMLFormElement, events: IEvents, customer: Customer) {
+  constructor(container: HTMLFormElement, events: IEvents) {
     super(container);
     this.events = events;
-    this.customer = customer;
 
     this.emailInput = container.querySelector('input[name="email"]')!;
     this.phoneInput = container.querySelector('input[name="phone"]')!;
-    this.errorMessage = container.querySelector('.form__errors')!;
 
     this.emailInput.addEventListener('input', () => {
-      this.customer.saveField('email', this.emailInput.value);
-      this.updateFormState();
+      this.events.emit('contacts:emailChange', { value: this.emailInput.value });
     });
-    
+     
     this.phoneInput.addEventListener('input', () => {
-      this.customer.saveField('phone', this.phoneInput.value);
-      this.updateFormState();
+      this.events.emit('contacts:phoneChange', { value: this.phoneInput.value });
     });
 
     this.container.addEventListener('submit', (e) => {
       e.preventDefault();
-      if (this.updateFormState()) {
-        this.events.emit('contacts:submit', {
-          email: this.emailInput.value.trim(),
-          phone: this.phoneInput.value.trim(),
-        });
-      }
+      this.events.emit('contacts:submit', {
+        email: this.emailInput.value,
+        phone: this.phoneInput.value
+      });
     });
   }
 
-  private updateFormState(): boolean {
-    const errors = this.customer.validate();
-    this.errorMessage.textContent = errors.email || errors.phone || '';
-    
-    const isValid = !errors.email && !errors.phone;
-    this.setSubmitEnabled(isValid);
-    return isValid;
+  setErrors(errors: { email?: string; phone?: string }) {
+    const errorMessage = errors.email || errors.phone || '';
+    this.setError(errorMessage);
+    this.setSubmitEnabled(!errorMessage);
   }
 
   render(data: ContactsFormData) {
     this.emailInput.value = data.email ?? '';
     this.phoneInput.value = data.phone ?? '';
-    this.errorMessage.textContent = '';
+    this.setError('');
     this.setSubmitEnabled(false);
   }
 }
